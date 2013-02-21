@@ -21,6 +21,8 @@ var defMulti = function(dispatchFn, defaultFn, dispatchMapping) {
         var dispatchValue = dispatchFn.apply(null, arguments);
         var dispatchTarget = defaultFn;
 
+        // NB: not using an associative array or js object since I don't want
+        // dispatch values to be coerced into strings
         _forEachPair(dm, function(v,f) {
             if (v === dispatchValue) {
                 dispatchTarget = f;
