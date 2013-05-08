@@ -1,10 +1,13 @@
 // using object identity for equality here
 var otherwise = {};
 var varType = {};
+var restType = {};
 var _ = function(k) {
     return {key: k, typeIndicator: varType};
-}
-var rest = {}; // TODO - change this to a function as well to allow capturing of the rest of the array
+};
+var rest = function(k) {
+    return {key: k, typeIndicator: restType};
+};
 
 var match = function() {
     var vals = arguments[0];
@@ -30,7 +33,6 @@ var match = function() {
     var arrayMatch = function(p,a) {
         return (Object.prototype.toString.call(p) === '[object Array]') && matches(p, a);
     };
-    // TODO: should this all be in wildcard?
     var captureWildcard = function(p,a) {
         if (p === undefined || p === null || p.typeIndicator !== varType) return false;
 
@@ -44,14 +46,22 @@ var match = function() {
                arrayMatch(p,a) ||
                propertyMatch(p,a) ||
                valMatch(p,a);
-    }
+    };
 
     var matches = function(pattern, args) {
+        var remainingArgs;
         if (pattern === otherwise) {
             return true;
         } else {
             for (var i=0,n=pattern.length;i<n;i++) {
                 if (pattern[i] === rest) {
+                    break;
+                } else if (pattern[i] !== undefined && pattern[i] !== null && pattern[i].typeIndicator === restType) {
+                    remainingArgs = new Array(args.length - i);
+                    for (var j=0,n=args.length-i;j<n;j++) {
+                        remainingArgs[j] = args[j+i];
+                    }
+                    extractedArgs[pattern[i].key] = remainingArgs;
                     break;
                 } else if (i >= args.length) {
                     throw "Incorrect number of arguments, expected " + pattern.length + " got " + args.length;
@@ -62,7 +72,7 @@ var match = function() {
 
             return true;
         }
-    }
+    };
 
     for (var i=0, n=pairs.length;i<n;i+=2) {
         if (matches(pairs[i], vals)) {
@@ -70,7 +80,7 @@ var match = function() {
             finalArgs.push(extractedArgs);
             return pairs[i+1].apply(null, finalArgs);
         }
-    }
+    };
 
     throw "No pattern match";
 };
@@ -113,7 +123,7 @@ var manyArgTest = matchFn(
 var destructTest = matchFn(
     [1,_("a")], function(a,b,vals) { console.log(vals.a); },
     [2,{foo:123, bar: _("bar")}], function(a,b,vals) { console.log("captured property value " + vals.bar); },
-    [[_("head"), rest], _("b")], function(x,y,vals) { console.log("captured head with value " + vals.head + " and b is " + vals.b); },
+    [[_("head"), rest("more")], _("b")], function(x,y,vals) { console.log("captured head with value " + vals.head + " and b is " + vals.b + " with more = " + vals.more); },
     otherwise, function() { console.log("default"); }
 );
 
