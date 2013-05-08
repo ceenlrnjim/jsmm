@@ -1,4 +1,9 @@
 describe("Suite of pattern matching tests", function() {
+    var matchFn = patmatch.matchFn;
+    var otherwise = patmatch.otherwise;
+    var _ = patmatch._;
+    var rest = patmatch.rest;
+
     it("test otherwise", function() {
         var testFn = matchFn(otherwise, function() { return 100; });
         expect(testFn(1)).toBe(100);
