@@ -1,16 +1,34 @@
 // TODO: require module
 var patmatch = (function() {
-    // using object identity for equality here
+    // using equality test on object identity here to detect certain values
     var otherwise = {};
     var varType = {};
     var restType = {};
+
+    /** Placeholder used to indicate a wildcard in match expression, and optionally
+     * to capture the value of that location.  Captured values are passed as an object
+     * in an extra argument to the function
+     */
     var _ = function(k) {
         return {key: k, typeIndicator: varType};
     };
+
+    /** Placeholder for all the remaining arguments (or elements of a list)
+     * that can optionally be used to capture the remaining values with the specified name
+     */
     var rest = function(k) {
         return {key: k, typeIndicator: restType};
     };
 
+    /**
+     * Match an array of values against the specified patterns.
+     * match([vals],
+     *       pattern1, fn,
+     *       pattern2, fn)
+     *
+     *  throws a TypeError if no pattern matches the values.  Use the otherwise literal pattern
+     *  as a catch all (or wildcards)
+     */
     var match = function() {
         var vals = arguments[0];
         var pairs = Array.prototype.slice.call(arguments,1);
@@ -42,6 +60,7 @@ var patmatch = (function() {
             return true;
         };
 
+        /** Returns true if the specified pattern value matches the specified argument */
         var argMatches = function(p,a) {
             return wildcard(p,a) ||
                    captureWildcard(p,a) ||
@@ -50,6 +69,7 @@ var patmatch = (function() {
                    valMatch(p,a);
         };
 
+        /** Returns true if the specified pattern matches the specified arguments */
         var matches = function(pattern, args) {
             var remainingArgs;
             if (pattern === otherwise) {
@@ -96,6 +116,9 @@ var patmatch = (function() {
         return r;
     }
 
+    /**
+     * Defines a function that performs pattern matching against its arguments
+     */
     var matchFn = function() {
         var pairs = arguments;
         return function() {
