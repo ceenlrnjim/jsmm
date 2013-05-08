@@ -74,6 +74,12 @@ describe("Suite of pattern matching tests", function() {
 
         expect(testFn({id: -1, name: "Jim"})).toBe("add Jim");
         expect(testFn({id: 103, name: "John"})).toBe("update 103");
+
+        var testFn2 = matchFn([{refs: [_, {id: 123}]}], function() { return "found123"; },
+                              otherwise, function() { return "nomatch"; });
+
+        expect(testFn2({name: "abc", refs: [{id: 999, name: "999"}, {id: 123, name: "123"}]})).toBe("found123");
+        expect(testFn2({name: "abc", refs: [{id: 999, name: "999"}, {id: 321, name: "321"}]})).toBe("nomatch");
     });
 
     it("test list destructuring", function() {

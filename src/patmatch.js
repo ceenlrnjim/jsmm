@@ -41,12 +41,7 @@ var patmatch = (function() {
             var prop;
             if (typeof p !== 'object') return false;
             for(prop in p) { 
-                // allow capture of values in object properties
-                if (p[prop] !== undefined && p[prop] !== null && p[prop].typeIndicator === varType) {
-                    extractedArgs[p[prop].key] = a[prop];
-                } else {
-                    if (p[prop] !== a[prop]) return false; 
-                }
+                if (!argMatches(p[prop], a[prop])) return false;
             }
             return true;
         };
