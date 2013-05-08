@@ -114,7 +114,7 @@ Obligatory slow Fibonacci implementation and the 'otherwise' pattern
     > fib(3);
     3
 
-Argument wildcards (note I'm using two underscores in my shorted local var since node uses single underscore for previous operation's result)
+Argument wildcards (note I'm using two underscores in my shortened local var since node uses single underscore for previous operation's result)
 
     > var otherwise = patmatch.otherwise
     undefined
@@ -160,11 +160,11 @@ I can also capture the value of a wild card.  Captured values will be passed in 
 
 Matching against object properties (wildcards and capturing apply to properties as well as nested objects and arrays).
 
-    > var saveObject = matchFn([{id: null}], function(obj) { return "save " + obj.name; },
+    > var saveObject = matchFn([{id: null}], function(obj) { return "insert " + obj.name; },
     ...                        otherwise, function(obj) { return "update " + obj.id; });
     undefined
     > saveObject({id: null, name: "Jane"});
-    'save Jane'
+    'insert Jane'
     > saveObject({id: 42, name: "John"});
     'update 42'
 
@@ -186,3 +186,4 @@ Array arguments can be matched using all the same syntax as the arguments matchi
       y: 2,
       z: 3 }
 
+TODO: rest and rest capture
