@@ -82,7 +82,7 @@ var match = function() {
         }
     };
 
-    throw "No pattern match";
+    throw new TypeError("No pattern match");
 };
 
 var cons = function(v,a) {
@@ -100,58 +100,3 @@ var matchFn = function() {
         return match.apply(null, cons(arguments, pairs));
     };
 };
-
-
-var patTest = matchFn(
-    [1, _], function() { console.log("1 is the lonliest number"); },
-    [_, 2], function() { console.log("b is 2"); },
-    [_, {foo: "abc", bar:"bar"}], function() { console.log("found an abc"); },
-    otherwise, function() { console.log("default"); }
-);
-
-var arrayPatTest = matchFn(
-    [_, [_, 5, _]], function() { console.log("nested arrays work"); },
-    otherwise, function() { console.log("default"); }
-);
-
-var manyArgTest = matchFn(
-    [1,_,_,_], function() { console.log("multi - match 1");},
-    [_,2,rest], function() { console.log("multi - match 2");},
-    otherwise, function() { console.log("default"); }
-);
-
-var destructTest = matchFn(
-    [1,_("a")], function(a,b,vals) { console.log(vals.a); },
-    [2,{foo:123, bar: _("bar")}], function(a,b,vals) { console.log("captured property value " + vals.bar); },
-    [[_("head"), rest("more")], _("b")], function(x,y,vals) { console.log("captured head with value " + vals.head + " and b is " + vals.b + " with more = " + vals.more); },
-    otherwise, function() { console.log("default"); }
-);
-
-match([1,2],
-    [1, _], function() { console.log("1 is the lonliest number"); },
-    [_, 2], function() { console.log("b is 2"); },
-    [_, {foo: "abc", bar:"bar"}], function() { console.log("found an abc"); },
-    otherwise, function() { console.log("default"); });
-
-match([3,3],
-    [1, _], function() { console.log("1 is the lonliest number"); },
-    [_, 2], function() { console.log("b is 2"); },
-    [_, {foo: "abc", bar:"bar"}], function() { console.log("found an abc"); },
-    otherwise, function() { console.log("default"); });
-
-(patTest(1,2));
-(patTest(2,2));
-(patTest(2,3));
-(patTest(2, {bar: "baz", foo: "abc"}));
-(patTest(2, {bar: "bar", foo: "abc"}));
-arrayPatTest(0, [1,4,5]);
-arrayPatTest(0, [1,5,5]);
-manyArgTest(1,2,3,4);
-manyArgTest(2,2,3,4);
-manyArgTest(2,1,3,4);
-manyArgTest(2,1,3,4,5);
-console.log("Destructuring...");
-destructTest(1,"thisIsArgumentValue a");
-destructTest([1,2,3,4,5], "foo");
-destructTest([1,2,3,4,5], "foo");
-destructTest(2, {foo: 123, bar: "hello world"});
