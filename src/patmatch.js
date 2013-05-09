@@ -94,7 +94,7 @@ var patmatch = (function() {
                 
                 // skip matching against the remaining arguments
                 if (pattern[i] === rest) {
-                    break;
+                    return true;
                 } 
                 // capture the remaining arguments in the specified variable name, but stop matching
                 else if (pattern[i] && pattern[i].typeIndicator === restType) {
@@ -103,19 +103,24 @@ var patmatch = (function() {
                         remainingArgs[j] = args[j+i];
                     }
                     extractedArgs[pattern[i].key] = remainingArgs;
-                    break;
+                    return true;
                 } 
-                // pattern and argument lengths don't match
+                // pattern is longer than passed arguments
                 else if (i >= args.length) {
-                    throw "Incorrect number of arguments, expected " + pattern.length + " got " + args.length;
+                    //console.log(" - failed match, not enough arguments");
+                    return false;
                 } 
                 // Check if the ith element of the pattern matches the ith element of the arguments
                 else if (!argMatches(pattern[i], args[i])) {
+                    //console.log(" - values don't match");
                     return false;
                 } 
             }
 
-            return true;
+            // last check - if the arguments are longer than the pattern, it isn't a match (need to use rest)
+            // less than should never happen since that would be hit in the loop above
+            //console.log(args.length + " <= " + pattern.length);
+            return (args.length <= pattern.length);
         };
 
         /** Test each pattern against the arguments to see which one matches */

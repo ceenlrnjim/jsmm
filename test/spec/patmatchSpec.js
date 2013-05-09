@@ -45,12 +45,16 @@ describe("Suite of pattern matching tests", function() {
     });
 
     it("test arg count", function() {
-        var testFn = matchFn([_,_], function() { return true; });
         var thrown = false;
+        var testFn = matchFn([_,_], function() { return "2"; },
+                             [_,_,_], function() { return "3"; },
+                             [_,_,_,rest], function() { return ">3";});
 
+        expect(testFn("a","b")).toBe("2");
+        expect(testFn("a","b","c")).toBe("3");
+        expect(testFn("a","b","c","d")).toBe(">3");
         try {
-            expect(testFn("a","b")).toBe(true);
-            expect(testFn("a")).toBe(100);
+            expect(testFn("a")).toBe("somethingthatwon'thappen");
         } catch (e) {
             thrown = true;
         }
@@ -114,6 +118,7 @@ describe("Suite of pattern matching tests", function() {
         expect(testFn("foo",2).a).toBe(undefined);
         expect(testFn("foo",2).b).toBe("foo");
     });
+
 
 
 });
