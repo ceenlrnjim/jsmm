@@ -21,10 +21,151 @@ var patmatch = (function() {
         return {key: k, typeIndicator: restType};
     };
 
-    var spy = function(t,v) {
-        //console.log("    - " + t + "> " + v);
-        return v;
+    var spy = function(t,f) {
+        return function() {
+        var v = f.apply(null, arguments);
+            console.log("    - " + t + "> " + v.matches + " " + v.proceed + " " + v.caps);
+            return v;
+        };
     };
+
+    /*************************************************************** REFACTOR BEGINS **************************/
+    var getMatchingFunction = function(vals, pairs) {
+        // returns: {fn: x, caps: y}
+        var r;
+        for (var i=0, n=pairs.length;i<n;i+=2) {
+            console.log("testing pattern " + i + " - " + pairs[i]);
+            r = testPattern(pairs[i], vals);
+            if (r.matches) {
+                return {fn: pairs[i+1], caps: r.caps};
+            }
+        }
+
+        return null;
+    };
+
+    var testPattern = function(pattern, vals) {
+        // returns {matches:true/false, caps: {}}
+        var r,lastElem;
+
+        // check for otherwise pattern and length matching
+        if (pattern === otherwise) {
+            return {matches:true, caps: {}};
+        } else if (pattern.length > vals.length) {
+            return {matches:false, caps: {}};
+        } else if (pattern.length < vals.length) {
+            lastElem = pattern[pattern.length-1];
+            if (lastElem !== rest &&
+                (!lastElem || lastElem.typeIndicator !== restType)) {
+                return {matches:false, caps: {}};
+            }
+        }
+
+        var caps = {};
+        for (var i=0, n=pattern.length;i<n;i++) {
+            console.log(" - testing element " + i + " - " + pattern[i] + " vs. " + vals[i]);
+            r = testArgument(pattern[i], vals[i], vals, i);
+            if (!r.matches) { return {matches:false, caps: {}}; }
+
+            for (var p in r.caps) { 
+                caps[p] = r.caps[p]; 
+            }
+
+            // do not continue matching arguments - allows short circuiting match with 'rest'
+            if (!r.proceed) { return {matches: r.matches, caps: caps}; }
+        }
+
+        return {matches: true, caps: caps}; 
+    };
+
+    var wildcard = function(p,a) { 
+        return {matches: p === _, proceed: true, caps: {}};
+    };
+
+    var valueMatch = function(p,a) { 
+        return {matches: p === a, proceed: true, caps: {}};
+    };
+
+    var restMatch = function(p,a,vals,val_ix) {
+        if (p === rest) {
+            return {matches: true, proceed: false, caps: {}};
+        } else {
+            return {matches: false, proceed: true, caps: {}};
+        }
+    };
+
+    var propertyMatch = function(p,a) {
+        var caps = {};
+        var r;
+        if (typeof p !== 'object' || p === null) return {matches: false,proceed:true,caps:{}};
+        for(var prop in p) { 
+            // TODO: nesting and capture
+            // plus other arguments to support "rest" etc.
+            r = testArgument(p[prop], a[prop])
+            if (!r.matches) return {matches: false,proceed:true,caps:{}};
+
+            for (var subprop in r.caps) {
+                caps[subprop] = r.caps[subprop];
+            }
+        }
+        return {matches: true, proceed: true, caps: caps};
+    };
+    var arrayMatch = function(p,a) {
+        if (Object.prototype.toString.call(p) === '[object Array]') {
+            return testPattern(p, a);
+        } else {
+            return {matches: false, proceed: true, caps: {}};
+        }
+    };
+    var captureWildcard = function(p,a) {
+        var caps = {};
+        if (p && p.typeIndicator === varType) {
+            caps[p.key] = a;
+            return {matches: true, proceed:true, caps:caps};
+        } else {
+            return {matches: false, proceed:true, caps:{}};
+        }
+    };
+    var restCapture = function(p,a,as,ix) {
+        var remainingArgs;
+        var caps;
+        if (p && p.typeIndicator === restType) {
+            remainingArgs = new Array(as.length - ix);
+            for (var j=0,m=as.length-ix;j<m;j++) {
+                remainingArgs[j] = as[j+ix];
+            }
+            caps = {}
+            caps[p.key] = remainingArgs;
+            return {matches:true, proceed: false, caps: caps};
+        } else {
+            return {matches:false, proceed: true, caps: {}};
+        }
+
+    };
+
+    var allMatchFns = [spy("wildcard",wildcard), 
+                       spy("captureWildcard",captureWildcard), 
+                       spy("restMatch",restMatch), 
+                       spy("restCapture",restCapture), 
+                       spy("arrayMatch",arrayMatch), 
+                       spy("propertyMatch",propertyMatch), 
+                       spy("valueMatch",valueMatch)];
+
+    var testArgument = function(pe, v, vals, vals_ix) {
+        // returns {matches: t/f, proceed: t/f, caps: {}}
+        var r;
+        var cumCaps = {};
+        // return at the first true, or with false if proceed = false
+        for (var i=0,n=allMatchFns.length;i<n;i++) {
+            r = allMatchFns[i](pe,v,vals,vals_ix);
+            if (r.matches || !r.proceed) {
+                return r;
+            }
+        }
+        return {matches: false};
+    };
+
+    /**********************************************************************************************************/
 
     /**
      * Match an array of values against the specified patterns.
@@ -126,9 +267,12 @@ var patmatch = (function() {
         /** Test each pattern against the arguments to see which one matches */
         for (var i=0, n=pairs.length;i<n;i+=2) {
             //console.log("testing pattern " + i);
-            if (patternMatches(pairs[i], vals)) {
+            //if (patternMatches(pairs[i], vals)) {
+            var testResults = testPattern(pairs[i], vals);
+            if (testResults.matches) {
                 finalArgs = Array.prototype.slice.call(vals);
-                finalArgs.push(extractedArgs);
+                //finalArgs.push(extractedArgs);
+                finalArgs.push(testResults.caps);
                 return pairs[i+1].apply(null, finalArgs);
             }
         }

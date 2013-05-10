@@ -23,11 +23,11 @@ describe("Suite of pattern matching tests", function() {
 
         expect(testFn("1")).toBe(1);
         expect(testFn("2")).toBe(2);
-        //expect(testFn("3")).toBe(-1);
-        //expect(multiTestFn(1,2,3)).toBe("up");
-        //expect(multiTestFn(3,2,1)).toBe("down");
-        //expect(multiTestFn(1,1,1)).toBe("all1");
-        //expect(multiTestFn(2,2,2)).toBe("all2");
+        expect(testFn("3")).toBe(-1);
+        expect(multiTestFn(1,2,3)).toBe("up");
+        expect(multiTestFn(3,2,1)).toBe("down");
+        expect(multiTestFn(1,1,1)).toBe("all1");
+        expect(multiTestFn(2,2,2)).toBe("all2");
     });
 
     it("test wildcard", function() {
