@@ -29,7 +29,6 @@ var patmatch = (function() {
         };
     };
 
-    /*************************************************************** REFACTOR BEGINS **************************/
     var getMatchingFunction = function(vals, pairs) {
         // returns: {fn: x, caps: y}
         var r;
@@ -78,6 +77,7 @@ var patmatch = (function() {
         return {matches: true, caps: caps}; 
     };
 
+    /* ------------------ Start functions that match against specific semantic cases ----------------- */
     var wildcard = function(p,a) { 
         return {matches: p === _, proceed: true, caps: {}};
     };
@@ -151,11 +151,16 @@ var patmatch = (function() {
                        spy("propertyMatch",propertyMatch), 
                        spy("valueMatch",valueMatch)];
 
+
+    /* ----------------------------------------------------------------------------------------------- */
+
+    /** Check if the specified pattern element (pe) matches the specified value (v) */
     var testArgument = function(pe, v, vals, vals_ix) {
         // returns {matches: t/f, proceed: t/f, caps: {}}
         var r;
         var cumCaps = {};
-        // return at the first true, or with false if proceed = false
+        // match against different potential cases until we find the first match 
+        // or one of the cases tells us we should stop
         for (var i=0,n=allMatchFns.length;i<n;i++) {
             r = allMatchFns[i](pe,v,vals,vals_ix);
             if (r.matches || !r.proceed) {
@@ -164,8 +169,6 @@ var patmatch = (function() {
         }
         return {matches: false};
     };
-
-    /**********************************************************************************************************/
 
     /**
      * Match an array of values against the specified patterns.
@@ -185,100 +188,15 @@ var patmatch = (function() {
         var extractedArgs;
         // arguments to be passed to the matching function
         var finalArgs;
-        
-        // Functions that test for different match cases
-        var argTests = {
-            wildcard: function(p,a) { return p === _;},
-            valMatch: function(p,a) { return a === p; },
-            propertyMatch: function(p,a) {
-                if (typeof p !== 'object' || p === null) return false;
-                for(var prop in p) { 
-                    if (!argMatches(p[prop], a[prop])) return false;
-                }
-                return true;
-            },
-            arrayMatch: function(p,a) {
-                return (Object.prototype.toString.call(p) === '[object Array]') && patternMatches(p, a);
-            },
-            captureWildcard: function(p,a) {
-                if (p && p.typeIndicator === varType) {
-                    extractedArgs[p.key] = a;
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        };
 
-        /** Returns true if the specified pattern value matches the specified argument */
-        var argMatches = function(p,a) {
-            return spy("wildcard", argTests.wildcard(p,a)) ||
-                   spy("captureWildcard", argTests.captureWildcard(p,a)) ||
-                   spy("arrayMatch", argTests.arrayMatch(p,a)) ||
-                   spy("propertyMatch", argTests.propertyMatch(p,a)) ||
-                   spy("valMatch", argTests.valMatch(p,a));
-        };
-
-        /** Returns true if the specified pattern matches the specified arguments */
-        var patternMatches = function(pattern, args) {
-            // array to capture unmatched arguments when captured with a 'rest'
-            var remainingArgs;
-            // clear out any extracted arguments that may have been captured by a previous pattern
-            extractedArgs = {};
-
-            if (pattern === otherwise) {
-                return true;
-            }
-
-            for (var i=0,n=pattern.length;i<n;i++) {
-                //console.log(" - testing pattern element " + i);
-                
-                // skip matching against the remaining arguments
-                if (pattern[i] === rest) {
-                    return true;
-                } 
-                // capture the remaining arguments in the specified variable name, but stop matching
-                else if (pattern[i] && pattern[i].typeIndicator === restType) {
-                    remainingArgs = new Array(args.length - i);
-                    for (var j=0,m=args.length-i;j<m;j++) {
-                        remainingArgs[j] = args[j+i];
-                    }
-                    extractedArgs[pattern[i].key] = remainingArgs;
-                    return true;
-                } 
-                // pattern is longer than passed arguments
-                else if (i >= args.length) {
-                    //console.log(" - failed match, not enough arguments");
-                    return false;
-                } 
-                // Check if the ith element of the pattern matches the ith element of the arguments
-                else if (!argMatches(pattern[i], args[i])) {
-                    //console.log(" - values don't match");
-                    return false;
-                } 
-            }
-
-            // last check - if the arguments are longer than the pattern, it isn't a match (need to use rest)
-            // less than should never happen since that would be hit in the loop above
-            //console.log(args.length + " <= " + pattern.length);
-            return (args.length <= pattern.length);
-        };
-
-        /** Test each pattern against the arguments to see which one matches */
-        for (var i=0, n=pairs.length;i<n;i+=2) {
-            //console.log("testing pattern " + i);
-            //if (patternMatches(pairs[i], vals)) {
-            var testResults = testPattern(pairs[i], vals);
-            if (testResults.matches) {
-                finalArgs = Array.prototype.slice.call(vals);
-                //finalArgs.push(extractedArgs);
-                finalArgs.push(testResults.caps);
-                return pairs[i+1].apply(null, finalArgs);
-            }
+        var targetFunction = getMatchingFunction(vals, pairs);
+        if (targetFunction === null) {
+            throw new TypeError("No pattern match");
+        } else {
+            finalArgs = Array.prototype.slice.call(vals);
+            finalArgs.push(targetFunction.caps);
+            return targetFunction.fn.apply(null, finalArgs);
         }
-
-        /** no match found - this is an error case, use 'otherwise' for a catch all */
-        throw new TypeError("No pattern match");
     };
 
     var cons = function(v,a) {
