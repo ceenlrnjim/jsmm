@@ -3,6 +3,7 @@ describe("Suite of pattern matching tests", function() {
     var otherwise = patmatch.otherwise;
     var _ = patmatch._;
     var rest = patmatch.rest;
+    var where = patmatch.where;
 
     it("test otherwise", function() {
         var testFn = matchFn(otherwise, function() { return 100; });
@@ -119,6 +120,13 @@ describe("Suite of pattern matching tests", function() {
         expect(testFn("foo",2).b).toBe("foo");
     });
 
+    it("test guards", function() {
+        var absval = matchFn(where([_("a")], "vals.a < 0"), function(a) { return a*-1; },
+                          otherwise, function(a) { return a; });
 
+        expect(absval(10)).toBe(10);
+        expect(absval(-10)).toBe(10);
+        expect(absval(0)).toBe(0);
+    });
 
 });

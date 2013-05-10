@@ -5,6 +5,7 @@ var patmatch = (function() {
     var otherwise = {};
     var varType = {};
     var restType = {};
+    var guardType = {};
 
     /** Placeholder used to indicate a wildcard in match expression, and optionally
      * to capture the value of that location.  Captured values are passed as an object
@@ -19,6 +20,20 @@ var patmatch = (function() {
      */
     var rest = function(k) {
         return {key: k, typeIndicator: restType};
+    };
+
+    // better name/syntax? where([_,_("a")], "vals.a > 0"), function () {}
+    var where = function(p,g) {
+        return {typeIndicator: guardType, pattern: p, condition: g};
+    };
+
+    var isGuard = function(p) {
+        return p && p.typeIndicator === guardType;
+    };
+
+    var checkGuard = function(guard, matchResult) {
+        var vals = matchResult.caps;
+        return eval(guard.condition);
     };
 
     var spy = function(t,f) {
@@ -43,6 +58,7 @@ var patmatch = (function() {
         return null;
     };
 
+
     var testPattern = function(pattern, vals) {
         // returns {matches:true/false, caps: {}}
         var r,lastElem;
@@ -50,6 +66,13 @@ var patmatch = (function() {
         // check for otherwise pattern and length matching
         if (pattern === otherwise) {
             return {matches:true, caps: {}};
+        } else if (isGuard(pattern)) {
+            r = testPattern(pattern.pattern, vals);
+            if (r.matches && checkGuard(pattern, r)) {
+                return r;
+            } else {
+                return {matches: false, caps: {}};
+            }
         } else if (pattern.length > vals.length) {
             return {matches:false, caps: {}};
         } else if (pattern.length < vals.length) {
@@ -104,6 +127,7 @@ var patmatch = (function() {
             r = testArgument(p[prop], a[prop])
             if (!r.matches) return {matches: false,proceed:true,caps:{}};
 
+            // keep adding results to caps, since multiple properties might be wildcard captures
             for (var subprop in r.caps) {
                 caps[subprop] = r.caps[subprop];
             }
@@ -222,5 +246,6 @@ var patmatch = (function() {
             matchFn: matchFn,
             otherwise: otherwise,
             rest: rest,
+            where: where,
             _:_};
 })();
