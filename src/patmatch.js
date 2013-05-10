@@ -39,7 +39,7 @@ var patmatch = (function() {
     var spy = function(t,f) {
         return function() {
         var v = f.apply(null, arguments);
-            console.log("    - " + t + "> " + v.matches + " " + v.proceed + " " + v.caps);
+            //console.log("    - " + t + "> " + v.matches + " " + v.proceed + " " + v.caps);
             return v;
         };
     };
@@ -48,7 +48,7 @@ var patmatch = (function() {
         // returns: {fn: x, caps: y}
         var r;
         for (var i=0, n=pairs.length;i<n;i+=2) {
-            console.log("testing pattern " + i + " - " + pairs[i]);
+            //console.log("testing pattern " + i + " - " + pairs[i]);
             r = testPattern(pairs[i], vals);
             if (r.matches) {
                 return {fn: pairs[i+1], caps: r.caps};
@@ -63,7 +63,8 @@ var patmatch = (function() {
         // returns {matches:true/false, caps: {}}
         var r,lastElem;
 
-        // check for otherwise pattern and length matching
+        // TODO: un-spaghetti this
+        // check for otherwise pattern, guards, and length matching
         if (pattern === otherwise) {
             return {matches:true, caps: {}};
         } else if (isGuard(pattern)) {
@@ -85,7 +86,7 @@ var patmatch = (function() {
 
         var caps = {};
         for (var i=0, n=pattern.length;i<n;i++) {
-            console.log(" - testing element " + i + " - " + pattern[i] + " vs. " + vals[i]);
+            //console.log(" - testing element " + i + " - " + pattern[i] + " vs. " + vals[i]);
             r = testArgument(pattern[i], vals[i], vals, i);
             if (!r.matches) { return {matches:false, caps: {}}; }
 
