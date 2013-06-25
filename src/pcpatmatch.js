@@ -24,7 +24,7 @@ module.exports = (function() {
         return {key: k, typeIndicator: restType};
     };
 
-    var wildcard, acceptAny, literalValue, pattern, arrayParser, restParser, capturedWildcardParser, objectPatternParser;
+    var wildcard, acceptAny, literalValue, pattern, arrayParser, restParser, capturedWildcardParser, objectPatternParser, patternElement;
 
 
     //
@@ -44,7 +44,7 @@ module.exports = (function() {
     CaptureWildcard.prototype.satisfiedBy = function(v) {
         var caps = {};
         caps[this.key] = v;
-        console.log("capturing " + caps);
+        //console.log("capturing " + caps);
         return {match:true, cont:true, caps: caps};
     };
 
@@ -55,14 +55,22 @@ module.exports = (function() {
     };
 
     var ObjectPattern = function(o) {
-        this.orderedKeys = [];
-        this.orderedVals = [];
-        for (var p in o) {
-            this.orderedKeys.push(p);
-            this.orderedVals.push(o[p]);
-        }
+        this.objectPattern = o;
     };
     ObjectPattern.prototype.satisfiedBy = function(o) {
+        debugger;
+        var caps = {};
+        var matchRes;
+        for (var prop in this.objectPattern) {
+            matchRes =  this.objectPattern[prop].satisfiedBy(o[prop]);
+            if (!matchRes.match) return false;
+
+            // make sure to get any captures from the sub-parsing
+            for (var cp in matchRes.caps) {
+                caps[cp] = matchRes.caps[cp];
+            }
+        }
+        return {match:true, cont:true, caps:caps};
     };
 
     var LiteralValue = function(v) {
@@ -76,7 +84,6 @@ module.exports = (function() {
         this.elements = elems;
     };
     CompositePattern.prototype.satisfiedBy = function(vals) {
-         debugger;
          var subresult;
          var caps = {};
 
@@ -134,11 +141,16 @@ module.exports = (function() {
 
     objectPatternParser = monads.mdo(parser, [pc.satisfies(function(o) { return o !== null && typeof o === 'object'; })],
         function(o) {
-            // TODO: need to parse all the property values
-            return parser.pure(new ObjectPattern(o));
+            var propParsers = {};
+            for (var prop in o) {
+                propParsers[prop] = parser.run(patternElement, [o[prop]]);
+            }
+            return parser.pure(new ObjectPattern(propParsers));
         });
 
-    pattern = monads.mdo(parser, [pc.many1(pc.or(wildcard, capturedWildcardParser, restParser, arrayParser, objectPatternParser literalValue))], function(es) {
+    patternElement = pc.or(wildcard, capturedWildcardParser, restParser, arrayParser, objectPatternParser, literalValue);
+
+    pattern = monads.mdo(parser, [pc.many1(patternElement)], function(es) {
         return parser.pure(new CompositePattern(es));
     });
 
