@@ -129,12 +129,12 @@ module.exports = (function() {
 
     capturedWildcardParser = monads.mdo(parser, [pc.satisfies(function(o) { return o.typeIndicator === varType; })],
         function(o) {
-            // TODO: need to parse all the property values
             return parser.pure(new CaptureWildcard(o.key));
         });
 
     objectPatternParser = monads.mdo(parser, [pc.satisfies(function(o) { return o !== null && typeof o === 'object'; })],
         function(o) {
+            // TODO: need to parse all the property values
             return parser.pure(new ObjectPattern(o));
         });
 
